@@ -1,3 +1,12 @@
-from .server import main
+import asyncio
 
-__all__ = ["main"]
+from .server import main as _main
+
+
+def main():
+    """Run the MCP server."""
+    asyncio.run(_main())
+
+
+if __name__ == "__main__":
+    main()

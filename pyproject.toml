@@ -22,7 +22,7 @@ dependencies = [
 ]
 
 [project.scripts]
-mcp-server-py2many = "mcp_server_py2many.server:main"
+mcp-server-py2many = "mcp_server_py2many.__main__:main"
 
 [build-system]
 requires = ["hatchling"]
