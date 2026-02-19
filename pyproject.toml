@@ -18,7 +18,7 @@ classifiers = [
 ]
 dependencies = [
     "mcp>=1.26.0",
-    "py2many>=0.7",
+    "py2many[llm]>=0.7",
 ]
 
 [project.scripts]
