@@ -82,6 +82,137 @@ Transpile Python code using py2many with LLM assistance for better handling of c
 
 List all supported target languages for transpilation.
 
+### 4. `verify_python`
+
+Verify Python code using SMT and z3 solver. This tool transpiles Python code using the `--smt` flag and then verifies it via z3 to check that the inverse of the pre/post conditions are unsat.
+
+**Parameters:**
+- `python_code` (string, required): The Python code to verify
+
+**How it works:**
+1. Transpiles Python code to SMT-LIB format using `py2many --smt`
+2. Extracts preconditions from the generated SMT (functions ending in `-pre`)
+3. Constructs a verification query that checks if there's a counterexample where:
+   - The preconditions hold (valid inputs)
+   - The implementation differs from the specification
+4. Runs z3 on the verification query
+5. Returns SAT if a bug/counterexample is found, UNSAT if verified
+
+**Example: Triangle Classification Bug Detection**
+
+This example uses the `triangle_buggy.py` test case from py2many to detect a bug in the triangle classification implementation:
+
+```python
+from adt import adt as sealed
+
+from py2many.smt import check_sat, default_value, get_model
+from py2many.smt import pre as smt_pre
+
+
+@sealed
+class TriangleType:
+    EQUILATERAL: int
+    ISOSCELES: int
+    RIGHT: int
+    ACUTE: int
+    OBTUSE: int
+    ILLEGAL: int
+
+
+a: int = default_value(int)
+b: int = default_value(int)
+c: int = default_value(int)
+
+
+def classify_triangle_correct(a: int, b: int, c: int) -> TriangleType:
+    """Correct implementation that properly sorts sides before classification"""
+    if a == b and b == c:
+        return TriangleType.EQUILATERAL
+    elif a == b or b == c or a == c:
+        return TriangleType.ISOSCELES
+    else:
+        if a >= b and a >= c:
+            if a * a == b * b + c * c:
+                return TriangleType.RIGHT
+            elif a * a < b * b + c * c:
+                return TriangleType.ACUTE
+            else:
+                return TriangleType.OBTUSE
+        elif b >= a and b >= c:
+            if b * b == a * a + c * c:
+                return TriangleType.RIGHT
+            elif b * b < a * a + c * c:
+                return TriangleType.ACUTE
+            else:
+                return TriangleType.OBTUSE
+        else:
+            if c * c == a * a + b * b:
+                return TriangleType.RIGHT
+            elif c * c < a * a + b * b:
+                return TriangleType.ACUTE
+            else:
+                return TriangleType.OBTUSE
+
+
+def classify_triangle(a: int, b: int, c: int) -> TriangleType:
+    """Buggy implementation - assumes a >= b >= c without sorting"""
+    # Pre-condition: all sides must be positive and satisfy triangle inequality
+    if smt_pre:
+        assert a > 0
+        assert b > 0
+        assert c > 0
+        assert a < (b + c)
+
+    if a >= b and b >= c:
+        if a == c or b == c:
+            if a == b and a == c:
+                return TriangleType.EQUILATERAL
+            else:
+                return TriangleType.ISOSCELES
+        else:
+            # BUG: Not sorting sides, assuming a is largest
+            if a * a != b * b + c * c:
+                if a * a < b * b + c * c:
+                    return TriangleType.ACUTE
+                else:
+                    return TriangleType.OBTUSE
+            else:
+                return TriangleType.RIGHT
+    else:
+        return TriangleType.ILLEGAL
+
+
+# Assert that the buggy version differs from correct version
+assert not classify_triangle_correct(a, b, c) == classify_triangle(a, b, c)
+check_sat()
+get_model()
+```
+
+**Verification Result:**
+```
+=== z3 verification result ===
+sat
+(
+  (define-fun a () Int
+    1)
+  (define-fun c () Int
+    2)
+  (define-fun b () Int
+    2)
+)
+
+=== VERIFICATION FAILED ===
+SAT means a counterexample was found where the implementation differs from the spec.
+```
+
+The counterexample found: `a=1, b=2, c=2` - this satisfies the preconditions (all positive, a < b+c) but the buggy implementation returns ILLEGAL while the correct implementation returns ISOSCELES.
+
+**Use Cases:**
+- Detect bugs in implementations by comparing against reference implementations
+- Verify that functions meet their specifications
+- Formal verification of pre/post conditions
+- Finding counterexamples for incorrect algorithms
+
 ## When to Use Deterministic vs LLM-Assisted Translation
 
 ### Use **Deterministic Translation** (`transpile_python`) when:
