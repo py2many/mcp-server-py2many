@@ -1,0 +1,35 @@
+[project]
+name = "mcp-server-py2many"
+version = "0.1.0"
+description = "MCP Server for py2many - transpile Python to multiple languages"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+    { name = "Your Name", email = "your.email@example.com" },
+]
+keywords = ["mcp", "py2many", "transpiler", "python", "code-generation"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "mcp>=1.26.0",
+    "py2many>=0.7",
+]
+
+[project.scripts]
+mcp-server-py2many = "mcp_server_py2many.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mcp_server_py2many"]
+
+[tool.uv]
+dev-dependencies = []
