@@ -1,6 +1,6 @@
 [project]
 name = "mcp-server-py2many"
-version = "0.1.0"
+version = "0.1.1"
 description = "MCP Server for py2many - transpile Python to multiple languages"
 readme = "README.md"
 requires-python = ">=3.12"
